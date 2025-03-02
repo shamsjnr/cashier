@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table tr {
+            border-bottom: 1px solid #333;
+        }
+        table.table2 tr {
+            border-bottom-style: double;
+        }
+        table tr th, table tr td {
+            padding: 8px 6px;
+            text-align: left;
+        }
+        table tr th.center, table tr td.center {
+            text-align: center;
+        }
+        table tr th.end, table tr td.end {
+            text-align: right;
+        }
+        .thanks {
+            font-size: 0.8em;
+            margin-top: 1.5rem;
+            border-top: 2px dashed #444;
+            text-align: center;
+            padding: 12px 0;
+        }
+        .flex {
+            display: flex;
+        }
+        .flex-col {
+            flex-direction: column;
+        }
+        .gap-3 {
+            gap: 1rem;
+        }
+        @media print {
+            @page {
+                size: 80mm 210mm;
+                width: 80mm;
+                padding-left: 2mm!important;
+                padding-right: 2mm!important;
+                margin: 0!important;
+                margin-top: -18mm!important; /* Required for ITPrinter POS-80 */
+            }
+            html, body {
+                font-size: 11pt;
+                padding: 0;
+                margin: 0;
+            }
+            .print-area {
+                min-height: 480px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tbody>
+            <tr>
+                <td class="center" style="display: flex; flex-direction: column; gap: 4px; align-items: center; padding-bottom: 12px;">
+                    <h2>Olimpia Phone Stores</h2>
+                    <h5>RC-1814680</h5>
+                    <img src="olimpia.png" width="80px" />
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="print-area">
+        <table>
+            <thead>
+                <tr>
+                    <th width="20px">SN</th>
+                    <th>Product (Qty)</th>
+                    <th class="end">Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>Samsung S23 plus</td>
+                    <td class="end">N400,000</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>FSuds Charger Head (x2)</td>
+                    <td class="end">N8,000</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Tititall Powerbank 50,000mAh</td>
+                    <td class="end">N38,000</td>
+                </tr>
+            </tbody>
+        </table>
+        <table class="table2">
+            <tbody>
+                <tr style="border: none;">
+                    <td colspan="2"></td>
+                </tr>
+                <tr style="border: none;">
+                    <td>Total</td>
+                    <td class="end">N446,000</td>
+                </tr>
+                <tr style="border-bottom: 2px dashed #444;">
+                    <td colspan="2" class="center" style="padding-bottom: 12px;"><b>Four hundred and Forty-Six thousand naira only</b></td>
+                </tr>
+                <tr style="border: none;">
+                    <td style="padding-top: 1.5rem;">
+                        <div class="flex flex-col gap-3">
+                            <span>Customer Sign:</span>
+                            <span>_______________</span>
+                        </div>
+                    </td>
+                    <td style="padding-top: 1.5rem;">
+                        <div class="flex flex-col gap-3" style="margin-left: auto; width: fit-content;">
+                            <span>Cashier Sign:</span>
+                            <span>_______________</span>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="thanks">
+            <div style="font-size: 1.2em; margin-bottom: 1rem;">Address: No. 19 Yayo Plaza, Farm Center, Kano</div>
+            Thank you for your patronage
+        </div>
+    </div>
+</body>
+</html>

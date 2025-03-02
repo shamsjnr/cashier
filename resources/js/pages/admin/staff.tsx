@@ -4,6 +4,7 @@ import { StaffData, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import { StaffModal, DeleteStaffModal } from './partials/staff';
+import Thanks from '@/components/thanks';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -25,8 +26,8 @@ export default function Staff({ staff }: {staff: StaffData[]}) {
             <StaffModal onOpen={onOpen} setOnOpen={setOnOpen} editing={editing} />
             <DeleteStaffModal onOpen={onDeleteOpen} setOnOpen={setOnDeleteOpen} editing={deleting} />
 
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 max-w-4xl 2xl:max-w-7xl">
-                <div className="flex justify-end items-center">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 print:px-1 print:py-2 max-w-4xl 2xl:max-w-7xl">
+                <div className="flex justify-end items-center print:hidden">
                     <Button variant="default"
                         onClick={() => {
                             setOnOpen(true)
@@ -34,7 +35,7 @@ export default function Staff({ staff }: {staff: StaffData[]}) {
                         }}
                     >Add staff</Button>
                 </div>
-                <div className='overflow-auto border rounded-lg text-sm'>
+                <div className='overflow-auto border print:border-gray-700 rounded-lg text-sm'>
                     <table className='w-full'>
                         <thead>
                             <tr className='border-b'>
@@ -53,7 +54,7 @@ export default function Staff({ staff }: {staff: StaffData[]}) {
                                 <td className='px-2 py-2.5'>{ data.name }</td>
                                 <td className='px-2 py-2.5'>{ data.username }</td>
                                 <td className='px-2 py-2.5'>{ data.phone }</td>
-                                <td className='px-2 py-2.5 space-x-1 text-end'>
+                                <td className='px-2 py-2.5 space-x-1 !text-end print:hidden'>
                                     <Button className='cursor-pointer' size={'sm'} variant={'secondary'} onClick={() => {
                                         setEditing(data);
                                         setOnOpen(true);
@@ -71,6 +72,7 @@ export default function Staff({ staff }: {staff: StaffData[]}) {
                         </tbody>
                     </table>
                 </div>
+                <Thanks />
             </div>
         </AppLayout>
     );

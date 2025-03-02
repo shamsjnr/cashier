@@ -79,7 +79,16 @@ class StaffController extends Controller
      */
     public function update(UpdateStaffRequest $request, User $staff)
     {
-        //
+        $staff->name = $request->name;
+        $staff->email = $request->email;
+        $staff->phone = $request->phone;
+        $staff->save();
+
+        Cache::forget('users.list');
+        return back()->with([
+            'status' => 'success',
+            'message' => 'Staff details updated'
+        ]);
     }
 
     /**

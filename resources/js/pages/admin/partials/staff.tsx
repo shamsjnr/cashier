@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { StaffData } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect } from 'react';
 
 interface staffModalProps {
     onOpen: boolean;
@@ -17,23 +17,50 @@ interface staffModalProps {
 
 export const StaffModal = ({ onOpen, setOnOpen, editing }: staffModalProps) => {
 
-    const { data, setData, processing, post, reset, errors } = useForm({
-        name: editing?.name || '',
-        email: editing?.email || '',
-        phone: editing?.phone || '',
-        password: editing?.password || '',
+    const { data, setData, processing, post, put, reset, errors } = useForm({
+        name: '',
+        email: '',
+        phone: '',
+        password: '',
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        post(editing ? route('staff.update', {id: editing}) : route('staff.list'), {
-            onSuccess: () => {
-                setOnOpen(false);
-                reset();
-            }
-        })
+        if (editing) {
+            put(route('staff.update', {staff: editing}), {
+                onSuccess: () => {
+                    setOnOpen(false);
+                    reset();
+                }
+            })
+        } else {
+            post(route('staff.list'), {
+                onSuccess: () => {
+                    setOnOpen(false);
+                    reset();
+                }
+            })
+        }
     }
+
+    useEffect(() => {
+        if (editing) {
+            setData('name', editing.name);
+            setData('email', editing.email || '');
+            setData('phone', editing.phone);
+            setData('password', editing.password || '');
+        }
+        return () => {
+            setData({
+                name: '',
+                email: '',
+                phone: '',
+                password: '',
+            })
+        }
+    }, [editing]);
+
     return (
         <Modal onOpen={onOpen} onClose={setOnOpen} title={ (editing ? 'Update' : 'Add') + ' Staff'} description='Input staff details'>
             <form onSubmit={submit} className='flex flex-col gap-4'>
