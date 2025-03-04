@@ -2,7 +2,11 @@ import { NavItem } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { FileTextIcon, LayoutDashboard, ShieldCheck, UserCog2 } from 'lucide-react';
 
-const Userdata = () => usePage()?.props?.auth;
+const User = (() => {
+    const userdata = usePage()?.props?.auth?.user;
+    console.log(userdata);
+    return userdata;
+})()
 
 const mainNavItems: NavItem[] = [
     {
@@ -30,4 +34,4 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-export const navs = Userdata?.user?.is_admin === 1 ? mainNavItems : mainNavItems.filter( (item) => ! item.adminOnly );
+export const navs = User?.is_admin === 1 ? mainNavItems : mainNavItems.filter( (item) => ! item.adminOnly );
