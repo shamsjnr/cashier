@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\ReceiptController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,6 +21,12 @@ Route::middleware('auth')->group(function() {
         Route::post('', [ItemController::class, 'store']);
         Route::put('{item}', [ItemController::class, 'update'])->name('item.update');
         Route::delete('{item}', [ItemController::class, 'destroy']);
+    });
+    Route::prefix('receipt')->group(function() {
+        Route::get('', [ReceiptController::class, 'index'])->name('receipt.generate');
+        Route::post('', [ReceiptController::class, 'store']);
+        Route::put('{item}', [ReceiptController::class, 'update'])->name('item.update');
+        Route::delete('{item}', [ReceiptController::class, 'destroy']);
     });
 });
 

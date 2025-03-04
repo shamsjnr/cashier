@@ -69,6 +69,10 @@ export default function Staff({ staff }: {staff: StaffData[]}) {
                             </tr>
                         ))
                         }
+                        { ! staff.length &&
+                        <tr>
+                            <td className='!p-4 !text-center' colSpan={5}>No data available</td>
+                        </tr> }
                         </tbody>
                     </table>
                 </div>

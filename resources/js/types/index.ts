@@ -20,6 +20,7 @@ export interface NavItem {
     icon?: LucideIcon | null;
     isActive?: boolean;
     fill?: boolean;
+    adminOnly?: boolean;
 }
 
 export interface SharedData {
@@ -47,4 +48,12 @@ export interface StaffData {
     phone: string;
     email?: string;
     password?: string;
+}
+
+export interface Receipt {
+    id: string;
+    name: string;
+    phone: string;
+    user_id: string;
+    metadata: object;
 }

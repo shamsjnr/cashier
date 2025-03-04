@@ -183,6 +183,11 @@ table.print tr th.end, table tr td.end {
         margin: 0!important;
         margin-top: -18mm!important; /* Required for ITPrinter POS-80 */
     }
+    * {
+        font-family: 'Times New Roman', Times, serif;
+        background-color: white!important;
+        color: #121212;
+    }
     html, body {
         font-size: 11pt;
         padding: 0;

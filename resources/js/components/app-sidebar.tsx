@@ -4,27 +4,8 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { LayoutDashboard, ShieldCheck, UserCog2 } from 'lucide-react';
 import AppLogo from './app-logo';
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        url: route('dashboard'),
-        icon: LayoutDashboard,
-        fill: true
-    },
-    {
-        title: 'Staff',
-        url: route('staff.list'),
-        icon: ShieldCheck,
-    },
-    {
-        title: 'Roles',
-        url: route('role.list'),
-        icon: UserCog2,
-    },
-];
+import { navs } from './nav-items';
 
 const footerNavItems: NavItem[] = [
     // {
@@ -54,8 +35,8 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
-                <NavMain items={mainNavItems} />
+            <SidebarContent className='pt-4'>
+                <NavMain items={navs} />
             </SidebarContent>
 
             <SidebarFooter>
