@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { ToWords } from 'to-words';
+import { Textarea } from '@/components/ui/textarea';
 
 // export default function Receipts({ receipts }: {receipts: Receipt[]}) {
 export default function Receipts() {
@@ -132,7 +133,7 @@ export default function Receipts() {
                                                             <b>{ customer }</b>
                                                         </div>
                                                     { details &&
-                                                        <div>{ details }</div>
+                                                        <div className='whitespace-pre-line text-xs italic'>{ details }</div>
                                                     }
                                                     </td>
                                                 </tr>
@@ -208,8 +209,7 @@ export default function Receipts() {
                                     />
                                 </div>
                                 <div>
-                                    <Input
-                                        type='text'
+                                    <Textarea
                                         value={details}
                                         onChange={(e) => setDetails(e.target.value)}
                                         placeholder='Extra Details'
