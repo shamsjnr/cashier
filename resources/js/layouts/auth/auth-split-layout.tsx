@@ -15,8 +15,10 @@ export default function AuthSplitLayout({ children, title, description }: AuthLa
         <div className="relative grid h-dvh flex-col items-center justify-center px-8 sm:px-0 lg:max-w-none lg:grid-cols-5 lg:px-0">
             <div className="bg-muted relative hidden h-full flex-col p-10 text-white lg:flex dark:border-r lg:col-span-2">
                 <div className="absolute inset-0 bg-gradient-to-bl from-green-800 to-teal-700" />
-                <Link href={route('home')} className="relative z-20 flex items-center text-lg font-medium">
-                    <AppLogoIcon className="mr-2 size-8 fill-current text-white" />
+                <Link href={route('home')} className="relative z-20 flex items-center gap-2 text-lg font-medium">
+                    <div className="rounded-full overflow-hidden">
+                        <AppLogoIcon className="mr-2 size-8 fill-current text-white" />
+                    </div>
                     {name}
                 </Link>
                 {quote && (

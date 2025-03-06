@@ -12,7 +12,7 @@ export default function AppLogo() {
                 </div>
             </div>
             <div className="hidden print:flex flex-col gap-1 items-center font-semibold text-sm">
-                <h2 className='text-2xl'>Olimpia Phone Stores</h2>
+                <h2 className='text-2xl'>Olimpia Phone Store</h2>
                 <h5>RC-1814680</h5>
                 <AppLogoIcon />
             </div>
