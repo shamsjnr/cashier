@@ -13,8 +13,23 @@
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         @inertiaHead
+        @laravelPWA
     </head>
     <body class="font-sans antialiased">
         @inertia
+        <script src="{{ asset('serviceworker.js') }}"></script>
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/serviceworker.js')
+                        .then(registration => {
+                            console.log('ServiceWorker registration successful');
+                        })
+                        .catch(registrationError => {
+                            console.error('ServiceWorker registration failed:', registrationError);
+                        });
+                });
+            }
+        </script>
     </body>
 </html>

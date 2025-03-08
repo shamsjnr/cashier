@@ -21,9 +21,7 @@ class ReceiptController extends Controller
             })
         ];
 
-        // $data = [];
-
-        return Inertia::render('cashier/receipts', $data);
+        return Inertia::render('cashier/partials/receipt', $data);
     }
 
     /**
@@ -31,7 +29,13 @@ class ReceiptController extends Controller
      */
     public function create()
     {
-        //
+        $data = [
+            'receipts' => Cache::remember('receipt.list', 60 * 24, function() {
+                return Receipt::whereDate('created_at', date('Y-m-d'))->get();
+            })
+        ];
+
+        return Inertia::render('cashier/receipts', $data);
     }
 
     /**

@@ -23,8 +23,9 @@ Route::middleware('auth')->group(function() {
         Route::delete('{item}', [ItemController::class, 'destroy']);
     });
     Route::prefix('receipt')->group(function() {
-        Route::get('', [ReceiptController::class, 'index'])->name('receipt.generate');
+        Route::get('', [ReceiptController::class, 'index'])->name('receipt.list');
         Route::post('', [ReceiptController::class, 'store']);
+        Route::get('list', [ReceiptController::class, 'create'])->name('receipt.generate');
         Route::put('{item}', [ReceiptController::class, 'update'])->name('item.update');
         Route::delete('{item}', [ReceiptController::class, 'destroy']);
     });
