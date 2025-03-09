@@ -1,21 +1,16 @@
 <?php
 
+use App\Http\Controllers\Dashboard;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ReceiptController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 // Route::get('/', function () {
 //     return Inertia::render('welcome');
 // })->name('home');
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
-});
-
-Route::middleware('auth')->group(function() {
+Route::middleware(['auth'])->group(function() {
+    Route::get('dashboard', [Dashboard::class, 'index'])->name('dashboard');
     Route::prefix('items')->group(function() {
         Route::get('', [ItemController::class, 'index'])->name('item.list');
         Route::post('', [ItemController::class, 'store']);

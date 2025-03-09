@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Receipt;
 use App\Http\Requests\StoreReceiptRequest;
 use App\Http\Requests\UpdateReceiptRequest;
+use App\Models\ReceiptData;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
@@ -16,12 +18,13 @@ class ReceiptController extends Controller
     public function index()
     {
         $data = [
-            'receipts' => Cache::remember('receipt.list', 60 * 24, function() {
-                return Receipt::whereDate('created_at', date('Y-m-d'))->get();
-            })
+            // 'receipts' => Cache::remember('receipt.list', now()->addHours(6), function() {
+            //     return Receipt::whereDate('created_at', date('Y-m-d'))->with('by')->get();
+                'receipts' => Receipt::whereDate('created_at', date('Y-m-d'))->with(['user:id,name', 'items'])->get()
+            // })
         ];
 
-        return Inertia::render('cashier/partials/receipt', $data);
+        return Inertia::render('cashier/receipts', $data);
     }
 
     /**
@@ -29,13 +32,7 @@ class ReceiptController extends Controller
      */
     public function create()
     {
-        $data = [
-            'receipts' => Cache::remember('receipt.list', 60 * 24, function() {
-                return Receipt::whereDate('created_at', date('Y-m-d'))->get();
-            })
-        ];
-
-        return Inertia::render('cashier/receipts', $data);
+        return Inertia::render('cashier/partials/receipt');
     }
 
     /**
@@ -43,7 +40,30 @@ class ReceiptController extends Controller
      */
     public function store(StoreReceiptRequest $request)
     {
-        //
+        $purchases = $request->input('receipt');
+        $customer = $request->input('customer');
+        $printed_at = $request->input('printed_at');
+
+        $receipt = new Receipt();
+        $receipt->customer_name = $customer;
+        $receipt->printed_at = $printed_at;
+        $receipt->user_id = Auth::id();
+        $receipt->save();
+
+        foreach ($purchases as $row) {
+            if (! $row['product'] || ! $row['quantity'] || ! $row['price']) continue;
+
+            $data = new ReceiptData();
+            $data->receipt_id = $receipt->id;
+            $data->name = $row['product'];
+            $data->price = $row['price'];
+            $data->quantity = $row['quantity'];
+            $data->save();
+        }
+
+        Cache::forget('receipt.list');
+
+        return back()->with('status', 'success');
     }
 
     /**

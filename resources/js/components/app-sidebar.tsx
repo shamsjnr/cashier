@@ -27,8 +27,8 @@ const mainNavItems: NavItem[] = [
         adminOnly: true,
     },
     {
-        title: 'Receipt Gen.',
-        url: route('receipt.generate'),
+        title: 'Receipts',
+        url: route('receipt.list'),
         icon: FileTextIcon,
     },
 ];

@@ -1,12 +1,24 @@
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import Thanks from '@/components/thanks';
 import { Input } from '@/components/ui/input';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { ToWords } from 'to-words';
 import { Textarea } from '@/components/ui/textarea';
+import { BreadcrumbItem } from '@/types';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Receipt',
+        href: route('receipt.list'),
+    },
+    {
+        title: 'Generate Receipt',
+        href: route('receipt.generate'),
+    },
+];
 
 export default function Receipts() {
 
@@ -27,6 +39,7 @@ export default function Receipts() {
     });
 
     const [receipt, setReceipt] = useState<item[]>([]);
+    const [editing, setEditing] = useState<item | null>(null);
     const [customer, setCustomer] = useState<string>('');
     const [details, setDetails] = useState<string>('');
     const [canPrint, setCanPrint] = useState<boolean>(false);
@@ -34,7 +47,17 @@ export default function Receipts() {
 
     const populate = () => {
         if ( ! input.price || ! input.quantity || ! input.product ) return;
-        setReceipt(prev => ([...prev, input]));
+        if (editing) {
+            const data = receipt.find(item => item === editing);
+            if (data) {
+                data.product = input.product;
+                data.price = input.price;
+                data.quantity = input.quantity;
+            }
+            setEditing(null);
+        } else {
+            setReceipt(prev => ([...prev, input]));
+        }
         setInput({
             product: '',
             quantity: 1,
@@ -42,30 +65,64 @@ export default function Receipts() {
         });
     }
 
-    const { data, setData, post } = useForm<item[]>();
+    const { data, setData, post } = useForm({
+        receipt: {},
+        customer: '',
+        printed_at: ''
+    });
 
     useEffect(() => {
         setCanPrint((receipt?.length > 0 && customer != ''));
         if (shouldPrint === true) {
+            setData({
+                receipt: receipt,
+                customer: customer,
+                printed_at: new Date().toJSON(),
+            });
+        }
+    }, [customer, receipt, shouldPrint, data, setData]);
+
+    useEffect(() => {
+        if (shouldPrint === true) {
+            post(route('receipt.list'), {
+                onSuccess: (data) => {
+                    if (data?.props?.flash?.status === 'success')
+                        linkRef?.current?.click();
+                }
+            });
             window.print();
             setShouldPrint(false);
-            setData(receipt);
-            post(route('receipt.list'));
         }
-    }, [customer, receipt, shouldPrint, post, setData]);
+    }, [data]);
 
-    const total:number = receipt?.length && receipt?.reduce((acc:number, c:item) => (acc + (c.price * c.quantity)), 0)
+    const total:number = receipt?.length && receipt?.reduce((acc:number, c:item) => (acc + (c.price * c.quantity)), 0);
+
+    const handleUpdate = (type:string, data:item) => {
+        if (type === 'edit') {
+            setEditing(data);
+            setInput({
+                product: data.product,
+                quantity: data.quantity,
+                price: data.price,
+            })
+        } else {
+            setReceipt(prev => prev.filter(item => item != data));
+            setEditing(null);
+        }
+    }
+
+    const linkRef = useRef(null);
 
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Receipt Generator" />
             {/* <StaffModal onOpen={onOpen} setOnOpen={setOnOpen} editing={editing} />
             <DeleteStaffModal onOpen={onDeleteOpen} setOnOpen={setOnDeleteOpen} editing={deleting} /> */}
-
+            <Link href={route('receipt.list')} ref={linkRef} prefetch></Link>
             <div className={`flex h-full flex-1 flex-col print:${ shouldPrint ? 'flex' : 'hidden'} gap-4 rounded-xl p-4 print:px-1 print:py-0 max-w-6xl`}>
                 <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-[1fr_360px] print:block">
                     <div>
-                        <Button variant="ghost" onClick={() => history.back()} className='ms-24 mb-4 py-0 ps-0 hover:ps-3 transition-all'>
+                        <Button variant="ghost" onClick={() => history.back()} className='ms-24 mb-4 py-0 ps-0 hover:ps-3 transition-all print:hidden'>
                             <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
                                 <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M328 112L184 256l144 144" />
                             </svg> Go back
@@ -84,13 +141,21 @@ export default function Receipts() {
                                 <tbody>
                                 {
                                 receipt.map((data: item, i: number) => (
-                                    <tr key={`receipts-${i}`} className='print:border-gray-500 border-t'>
+                                    <tr key={`receipts-${i}`} className={'print:border-gray-500 border-t group/tr ' +
+                                        (editing === data && ' bg-gray-100/75 text-gray-400 dark:bg-gray-700')
+                                    }>
                                         <td className='!px-2 py-2.5 print:py-2 w-4'>{i + 1}</td>
                                         <td className='!px-2 py-2.5 print:py-2'>{ data.product } (x{data.quantity})</td>
                                         {/* <td className='!px-3 py-2.5 print:py-2 !text-end'>{ data.quantity }</td> */}
-                                        <td className='!px-2 py-2.5 print:py-2 !text-end'>
-                                            <span className='text-gray-500 line-through decoration-double'>N</span>
-                                            { Number(data.price).toLocaleString() }
+                                        <td className='!px-2 py-2.5 print:py-2 !text-end relative'>
+                                            <div className='text-nowrap group-hover/tr:opacity-0'>
+                                                <span className='text-gray-500 line-through decoration-double'>N</span>
+                                                { Number(data.price * data.quantity).toLocaleString() }
+                                            </div>
+                                            <div className='absolute opacity-0 -z-10 group-hover/tr:z-10 group-hover/tr:opacity-100 top-1/2 -translate-y-1/2 origin-right right-2 flex items-center scale-75 gap-2 transition-all'>
+                                                <Button variant={'outline'} size={'sm'} onClick={() => handleUpdate('edit', data)}>Edit</Button>
+                                                <Button variant={'destructive'} size={'sm'} onClick={() => handleUpdate('delete', data)}>Delete</Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -172,21 +237,22 @@ export default function Receipts() {
                                     <Input
                                         type='text'
                                         value={input.price}
-                                        onChange={(e) => setInput(prev => ({...prev, price: Number(e.target.value)}))}
+                                        onChange={(e) => setInput(prev => ({...prev, price: (Number(e.target.value) || 0 )}))}
                                         placeholder='Price'
                                     />
                                 </div>
                                 <div>
                                     <Label htmlFor=''>Quantity</Label>
                                     <Input
-                                        type='number'
-                                        min={1}
+                                        type='text'
                                         value={input.quantity}
-                                        onChange={(e) => setInput(prev => ({...prev, quantity: Number(e.target.value)}))}
+                                        onChange={(e) => setInput(prev => ({...prev, quantity: (Number(e.target.value) || 0 )}))}
                                         placeholder='Quantity'
                                     />
                                 </div>
-                                <Button variant={'secondary'} className='mt-4 w-full' onClick={() => populate()}>Add</Button>
+                                <Button variant={'secondary'} className='mt-4 w-full' onClick={() => populate()}>
+                                    { editing ? 'Update' : 'Add' }
+                                </Button>
                             </div>
                         </div>
                         <div className='border rounded-2xl shadow p-3'>
@@ -207,7 +273,7 @@ export default function Receipts() {
                                         placeholder='Extra Details'
                                     />
                                 </div>
-                                <Button className='mt-4 w-full' disabled={ ! canPrint } onClick={() => setShouldPrint(true)}>Print Receipt</Button>
+                                <Button className='mt-4 w-full' disabled={ ! canPrint } onClick={() => setShouldPrint(true)}>Save & Print</Button>
                             </div>
                         </div>
                     </div>

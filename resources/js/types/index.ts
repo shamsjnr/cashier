@@ -54,6 +54,9 @@ export interface Receipt {
     id: string;
     customer_name: string;
     printed_at: string;
-    user: string;
+    user: {
+        id: number,
+        name: string
+    };
     data: object;
 }

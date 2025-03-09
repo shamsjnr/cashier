@@ -22,7 +22,9 @@ class StoreReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'receipt' => 'required|array',
+            'customer' => 'required|string',
+            'printed_at' => 'required|string'
         ];
     }
 }

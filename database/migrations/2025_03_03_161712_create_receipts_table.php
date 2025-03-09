@@ -21,6 +21,7 @@ return new class extends Migration
 
         Schema::create('receipt_data', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('receipt_id');
             $table->string('item_id')->nullable();
             $table->string('name')->nullable();
             $table->decimal('price', 8, 1);
