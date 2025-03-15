@@ -36,19 +36,21 @@ export default function Receipts({ receipts }: {receipts: Receipt[]}) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                {
-                                receipts?.map((data: Receipt, i: number) => (
-                                    <tr key={`receipts-${i}`} className='print:border-gray-500 border-t'>
-                                        <td className='!px-2 py-2.5 print:py-2 w-4'>{i + 1}</td>
-                                        <td className='!px-2 py-2.5 print:py-2'>{ data.customer_name }</td>
-                                        <td className='!px-3 py-2.5 print:py-2'>{ data.printed_at }</td>
-                                        <td className='!px-3 py-2.5 print:py-2'>{ data.user?.name }</td>
-                                        <td className='!px-2 py-2.5 print:py-2 !text-end'>
-                                            {/* { Number(data.price).toLocaleString() } */}
-                                        </td>
-                                    </tr>
-                                ))
-                                }
+                                { receipts?.map((data: Receipt, i: number) => {
+                                    const dated = new Date(data.printed_at).toLocaleDateString();
+                                    return (
+                                        <tr key={`receipts-${i}`} className='print:border-gray-500 border-t'>
+                                            <td className='!px-2 py-2.5 print:py-2 w-4'>{i + 1}</td>
+                                            <td className='!px-2 py-2.5 print:py-2'>{ data.customer_name }</td>
+                                            <td className='!px-3 py-2.5 print:py-2'>{ dated }</td>
+                                            <td className='!px-3 py-2.5 print:py-2'>{ data.user?.name }</td>
+                                            <td className='!px-2 py-2.5 print:py-2 !text-end'>
+                                                {/* { Number(data.price).toLocaleString() } */}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+
                                 { ! receipts?.length &&
                                     <tr>
                                         <td className='!p-4 !text-center' colSpan={5}>No data available</td>

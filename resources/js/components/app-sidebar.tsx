@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import AppLogo from './app-logo';
-import { FileTextIcon, LayoutDashboard, ShieldCheck, UserCog2 } from 'lucide-react';
+import { FileTextIcon, LayoutDashboard, ShieldCheck } from 'lucide-react';
 
 const mainNavItems: NavItem[] = [
     {
@@ -20,12 +20,12 @@ const mainNavItems: NavItem[] = [
         icon: ShieldCheck,
         adminOnly: true,
     },
-    {
-        title: 'Roles',
-        url: route('role.list'),
-        icon: UserCog2,
-        adminOnly: true,
-    },
+    // {
+    //     title: 'Roles',
+    //     url: route('role.list'),
+    //     icon: UserCog2,
+    //     adminOnly: true,
+    // },
     {
         title: 'Receipts',
         url: route('receipt.list'),

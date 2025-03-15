@@ -124,7 +124,7 @@ export default function Receipts() {
                     <div>
                         <Button variant="ghost" onClick={() => history.back()} className='ms-24 mb-4 py-0 ps-0 hover:ps-3 transition-all print:hidden'>
                             <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-                                <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M328 112L184 256l144 144" />
+                                <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="48" d="M328 112L184 256l144 144" />
                             </svg> Go back
                         </Button>
                         <div className='overflow-auto border print:border-x-0 print:border-b-2 print:border-dashed sm:w-[120mm] print:w-[80mm] print:text-[1rem] mx-auto sm:scale-125 print:scale-100 mt-10 print:mt-3 print:border-gray-700 rounded-lg print:rounded-none text-sm'>
