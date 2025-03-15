@@ -52,8 +52,11 @@ export interface StaffData {
 
 export interface Receipt {
     id: string;
-    name: string;
-    phone: string;
-    user_id: string;
-    metadata: object;
+    customer_name: string;
+    printed_at: string;
+    user: {
+        id: number,
+        name: string
+    };
+    data: object;
 }

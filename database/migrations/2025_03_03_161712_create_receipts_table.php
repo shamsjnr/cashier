@@ -13,10 +13,19 @@ return new class extends Migration
     {
         Schema::create('receipts', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('phone');
-            $table->json('metadata');
+            $table->string('customer_name');
+            $table->timestamp('printed_at');
             $table->foreignId('user_id');
+            $table->timestamps();
+        });
+
+        Schema::create('receipt_data', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('receipt_id');
+            $table->string('item_id')->nullable();
+            $table->string('name')->nullable();
+            $table->decimal('price', 8, 1);
+            $table->unsignedMediumInteger('quantity');
             $table->timestamps();
         });
     }
@@ -27,5 +36,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('receipts');
+        Schema::dropIfExists('receipt_data');
     }
 };

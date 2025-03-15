@@ -19,6 +19,7 @@ class Setup extends Seeder
             'email' => 'admin@cashier.ng',
             'username' => 'admin',
             'phone' => '00000000000',
+            'is_admin' => 1,
             'password' => Hash::make('admin')
         ]);
     }

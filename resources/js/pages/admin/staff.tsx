@@ -49,7 +49,7 @@ export default function Staff({ staff }: {staff: StaffData[]}) {
                         <tbody>
                         {
                         staff.map((data: StaffData, i: number) => (
-                            <tr key={`staff-${i}`} className='hover:bg-gray-50/50 border-t'>
+                            <tr key={`staff-${i}`} className='hover:bg-gray-50/50 dark:hover:bg-gray-500/10 border-t'>
                                 <td className='px-4 py-2.5 w-4 text-end border-e'>{i + 1}</td>
                                 <td className='px-2 py-2.5'>{ data.name }</td>
                                 <td className='px-2 py-2.5'>{ data.username }</td>
