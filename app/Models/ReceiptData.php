@@ -7,13 +7,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReceiptData extends Model
 {
-    /**
-     * Get the Receipt that owns the ReceiptData
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function Receipt(): BelongsTo
+    protected $fillable = ['receipt_id', 'item_id', 'name', 'price', 'quantity'];
+
+    public function receipt(): BelongsTo
     {
         return $this->belongsTo(Receipt::class);
+    }
+
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class, 'item_id', 'uuid');
     }
 }

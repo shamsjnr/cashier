@@ -3,44 +3,31 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Staff;
 use App\Http\Requests\StoreStaffRequest;
 use App\Http\Requests\UpdateStaffRequest;
 use App\Models\User;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class StaffController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $data = [
-            'staff' => Cache::rememberForever('users.list', function() {
-                return User::whereNot('is_admin', 1)->get();
-            })
-        ];
+        $staff = User::role(['manager', 'cashier'])
+            ->with('roles:id,name')
+            ->orderBy('name')
+            ->paginate(25);
 
-        return Inertia::render('admin/staff', $data);
+        return Inertia::render('admin/staff', [
+            'staff' => $staff,
+            'roles' => Role::orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreStaffRequest $request)
     {
-        $count = str_pad((User::whereNot('is_admin', 1)->count() + 1), 3, '0', STR_PAD_LEFT);
+        $count = str_pad((User::role(['manager', 'cashier'])->count() + 1), 3, '0', STR_PAD_LEFT);
         $staffId = "STF{$count}";
 
         $staff = new User;
@@ -51,32 +38,14 @@ class StaffController extends Controller
         $staff->password = Hash::make($request->password);
         $staff->save();
 
-        Cache::forget('users.list');
+        $staff->assignRole($request->input('role', 'cashier'));
+
         return back()->with([
             'status' => 'success',
-            'message' => 'Staff created successfully'
+            'message' => 'Staff created successfully',
         ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Staff $staff)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Staff $staff)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateStaffRequest $request, User $staff)
     {
         $staff->name = $request->name;
@@ -84,23 +53,22 @@ class StaffController extends Controller
         $staff->phone = $request->phone;
         $staff->save();
 
-        Cache::forget('users.list');
+        if ($request->has('role')) {
+            $staff->syncRoles([$request->input('role')]);
+        }
+
         return back()->with([
             'status' => 'success',
-            'message' => 'Staff details updated'
+            'message' => 'Staff details updated',
         ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(User $staff)
     {
         $staff->delete();
-        Cache::forget('users.list');
         return back()->with([
             'status' => 'success',
-            'message' => 'Staff removed'
+            'message' => 'Staff removed',
         ]);
     }
 }

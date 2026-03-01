@@ -2,146 +2,66 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Item;
 use App\Models\Receipt;
+use App\Models\ReceiptData;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class Dashboard extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
+        $todayRevenue = Receipt::whereDate('created_at', today())->sum('total');
+        $yesterdayRevenue = Receipt::whereDate('created_at', today()->subDay())->sum('total');
+
         $data = [
             'chart' => $this->getDailyPayments(),
-            'margins' => $this->getProfitMargin()
+            'margins' => [
+                'today' => floatval($todayRevenue),
+                'yesterday' => floatval($yesterdayRevenue),
+                'profitMargin' => $yesterdayRevenue > 0
+                    ? round((($todayRevenue - $yesterdayRevenue) / $yesterdayRevenue) * 100, 1)
+                    : ($todayRevenue > 0 ? 100 : 0),
+            ],
+            'todayStats' => [
+                'receipts_count' => Receipt::whereDate('created_at', today())->count(),
+                'total_revenue' => floatval($todayRevenue),
+                'items_sold' => (int) ReceiptData::whereHas('receipt', fn ($q) => $q->whereDate('created_at', today()))->sum('quantity'),
+            ],
+            'lowStockItems' => Item::where('track_stock', true)
+                ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+                ->orderBy('stock_quantity')
+                ->take(5)
+                ->get(['uuid', 'name', 'stock_quantity', 'low_stock_threshold']),
+            'recentReceipts' => Receipt::with('user:id,name')
+                ->latest()
+                ->take(5)
+                ->get(['id', 'receipt_number', 'customer_name', 'total', 'payment_method', 'user_id', 'created_at']),
         ];
+
         return Inertia::render('dashboard', $data);
     }
 
-    public function getDailyPayments()
+    private function getDailyPayments(): array
     {
         $dailyReceipt = [];
-        $currentDate = Carbon::today()->subDays(7);
 
-        // Loop through each day
         for ($i = 6; $i >= 0; $i--) {
-            $currentDate = Carbon::today()->subDays($i);
+            $date = Carbon::today()->subDays($i);
 
-            // Get receipts for this specific date
-            $receipts = Receipt::selectRaw("
-                DATE(p.created_at) as date,
-                COALESCE(SUM(rd.price * rd.quantity), 0) as total
-            ")
-            ->from((new Receipt)->getTable() . ' as p')
-            ->leftJoin('receipt_data as rd', 'rd.receipt_id', '=', 'p.id')
-            ->whereDate('p.created_at', $currentDate)
-            ->groupBy(DB::raw('DATE(p.created_at)'))
-            ->first();
+            $total = Receipt::whereDate('created_at', $date)->sum('total');
 
-            // Ensure we have data for this date
             $dailyReceipt[] = [
-                'date' => $currentDate->format('D'),
-                'amount' => $receipts ? $receipts->total : 0
+                'date' => $date->format('D'),
+                'amount' => floatval($total),
             ];
         }
-
-        // Sort by date ascending
-        // usort($dailyReceipt, function($a, $b) {
-        //     return strtotime($b['date']) - strtotime($a['date']);
-        // });
-
-        // // Format data for frontend
-        // $formattedData = $dailyReceipt->map(function ($receipt) {
-        //     return [
-        //         'date' => date('D', strtotime($receipt->date)),
-        //         'totalAmount' => floatval($receipt->total),
-        //     ];
-        // });
 
         return [
             'data' => $dailyReceipt,
             'labels' => [],
         ];
-    }
-
-    public function getProfitMargin()
-    {
-        // Calculate yesterday vs today totals
-        $todayQuery = Receipt::leftJoin('receipt_data as rd', 'rd.receipt_id', '=', 'p.id')
-            ->whereDate('p.created_at', Carbon::today())
-            ->selectRaw('COALESCE(SUM(rd.price * rd.quantity), 0) as total')->from((new Receipt)->getTable() . ' as p');
-
-        $yesterdayQuery = Receipt::leftJoin('receipt_data as rd', 'rd.receipt_id', '=', 'p.id')
-            ->whereDate('p.created_at', '<=', Carbon::yesterday())
-            ->orderBy('p.created_at', 'DESC')
-            ->selectRaw('COALESCE(SUM(rd.price * rd.quantity), 0) as total')->from((new Receipt)->getTable() . ' as p');
-
-        $todayTotal = $todayQuery->first()->total;
-        $yesterdayTotal = $yesterdayQuery->first()->total;
-
-        // Calculate profit margin percentage
-        if ($yesterdayTotal === 0) {
-            $profitMargin = 100; // Handle division by zero
-        } else {
-            $profitMargin = (($todayTotal - $yesterdayTotal) / $yesterdayTotal) * 100;
-        }
-
-        return [
-            'today' => floatval($todayTotal),
-            'yesterday' => floatval($yesterdayTotal),
-            'profitMargin' => floatval($profitMargin),
-        ];
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }

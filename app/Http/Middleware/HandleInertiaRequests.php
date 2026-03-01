@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\LicenseService;
+use App\Services\UpdateService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -44,11 +46,21 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),
+                'roles' => $request->user()?->getRoleNames() ?? [],
+                'permissions' => $request->user()?->getAllPermissions()->pluck('name') ?? [],
             ],
             'flash' => [
                 'status' => fn () => $request->session()->get('status'),
                 'message' => fn () => $request->session()->get('message')
             ],
+            'update' => function () use ($request) {
+                if (! $request->user()?->can('settings.manage')) {
+                    return null;
+                }
+
+                return app(UpdateService::class)->getUpdateStatus();
+            },
+            'license' => fn () => app(LicenseService::class)->getStatus(),
         ];
     }
 }

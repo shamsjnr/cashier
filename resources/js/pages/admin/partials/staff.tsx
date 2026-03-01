@@ -9,19 +9,28 @@ import { useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler, useEffect } from 'react';
 
-interface staffModalProps {
+interface StaffModalProps {
+    onOpen: boolean;
+    setOnOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    editing: StaffData | null;
+    roles: string[];
+}
+
+interface DeleteStaffModalProps {
     onOpen: boolean;
     setOnOpen: React.Dispatch<React.SetStateAction<boolean>>;
     editing: StaffData | null;
 }
 
-export const StaffModal = ({ onOpen, setOnOpen, editing }: staffModalProps) => {
+export const StaffModal = ({ onOpen, setOnOpen, editing, roles }: StaffModalProps) => {
 
     const { data, setData, processing, post, put, reset, errors } = useForm({
         name: '',
+        username: '',
         email: '',
         phone: '',
         password: '',
+        role: 'cashier',
     });
 
     const submit: FormEventHandler = (e) => {
@@ -46,18 +55,17 @@ export const StaffModal = ({ onOpen, setOnOpen, editing }: staffModalProps) => {
 
     useEffect(() => {
         if (editing) {
-            setData('name', editing.name);
-            setData('email', editing.email || '');
-            setData('phone', editing.phone);
-            setData('password', editing.password || '');
+            setData({
+                name: editing.name,
+                username: editing.username || '',
+                email: editing.email || '',
+                phone: editing.phone,
+                password: '',
+                role: editing.roles?.[0]?.name || editing.role || 'cashier',
+            });
         }
         return () => {
-            setData({
-                name: '',
-                email: '',
-                phone: '',
-                password: '',
-            })
+            reset();
         }
     }, [editing]);
 
@@ -70,14 +78,34 @@ export const StaffModal = ({ onOpen, setOnOpen, editing }: staffModalProps) => {
                     <InputError message={errors.name} />
                 </div>
                 <div className='grid gap-2'>
-                    <Label>Email:</Label>
-                    <Input type='email' name='email' value={data.email} onChange={(e) => setData('email', e.target.value)} />
-                    <InputError message={errors.email} />
+                    <Label>Username:</Label>
+                    <Input type='text' name='username' value={data.username} onChange={(e) => setData('username', e.target.value)} />
+                    <InputError message={errors.username} />
+                </div>
+                <div className='grid grid-cols-2 gap-3'>
+                    <div className='grid gap-2'>
+                        <Label>Email:</Label>
+                        <Input type='email' name='email' value={data.email} onChange={(e) => setData('email', e.target.value)} />
+                        <InputError message={errors.email} />
+                    </div>
+                    <div className='grid gap-2'>
+                        <Label>Phone:</Label>
+                        <Input type='tel' name='phone' maxLength={11} value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
+                        <InputError message={errors.phone} />
+                    </div>
                 </div>
                 <div className='grid gap-2'>
-                    <Label>Phone:</Label>
-                    <Input type='tel' name='phone' maxLength={11} value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
-                    <InputError message={errors.phone} />
+                    <Label>Role:</Label>
+                    <select
+                        className='flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
+                        value={data.role}
+                        onChange={(e) => setData('role', e.target.value)}
+                    >
+                        {roles.map((role) => (
+                            <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
+                        ))}
+                    </select>
+                    <InputError message={errors.role} />
                 </div>
                 { ! editing &&
                 <div className='grid gap-2'>
@@ -94,13 +122,12 @@ export const StaffModal = ({ onOpen, setOnOpen, editing }: staffModalProps) => {
     )
 }
 
-export const DeleteStaffModal = ({onOpen, setOnOpen, editing}: staffModalProps) => {
+export const DeleteStaffModal = ({onOpen, setOnOpen, editing}: DeleteStaffModalProps) => {
     const { delete:remove, processing, } = useForm({
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        console.log("In here!");
         setOnOpen(false);
         remove(route('staff.update', {staff: editing}), {
             onSuccess: () => {

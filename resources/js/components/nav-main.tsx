@@ -5,7 +5,7 @@ import {
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 
-export function NavMain({ items = [] }: { items: NavItem[] }) {
+export function NavMain({ items = [], updateBadge }: { items: NavItem[]; updateBadge?: string }) {
     const page = usePage();
     return (
         <SidebarGroup className="px-2 py-0">
@@ -17,6 +17,9 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                             <Link href={item.url} prefetch>
                                 {item.icon && <item.icon fill={item.fill ? 'currentColor' : 'none'} />}
                                 <span>{item.title}</span>
+                                {updateBadge === item.title && (
+                                    <span className="ml-auto h-2 w-2 rounded-full bg-green-500" />
+                                )}
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

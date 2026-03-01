@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\PosSetting;
+use App\Services\UpdateService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Process;
+use Inertia\Inertia;
+
+class UpdateController extends Controller
+{
+    /**
+     * Show the system update page.
+     */
+    public function index(UpdateService $updateService)
+    {
+        $updateService->clearCache();
+        $updateStatus = $updateService->getUpdateStatus();
+        $progress = PosSetting::get('update_progress');
+
+        return Inertia::render('settings/update', [
+            'updateStatus' => $updateStatus,
+            'updateProgress' => $progress ? json_decode($progress, true) : null,
+        ]);
+    }
+
+    /**
+     * Check for updates (JSON).
+     */
+    public function check(UpdateService $updateService): JsonResponse
+    {
+        $updateService->clearCache();
+
+        return response()->json($updateService->getUpdateStatus());
+    }
+
+    /**
+     * Start the update process in the background.
+     */
+    public function run(): JsonResponse
+    {
+        // Reset progress
+        PosSetting::set('update_progress', json_encode([
+            'step' => 'queued',
+            'message' => 'Update queued...',
+            'percent' => 0,
+            'updated_at' => now()->toISOString(),
+        ]));
+
+        $php = $this->findPhpBinary();
+        $artisan = base_path('artisan');
+
+        // Launch as a detached background process
+        Process::start([$php, $artisan, 'cashier:update']);
+
+        return response()->json([
+            'status' => 'started',
+            'message' => 'Update process started.',
+        ]);
+    }
+
+    /**
+     * Poll for update progress (JSON).
+     */
+    public function progress(): JsonResponse
+    {
+        $progress = PosSetting::get('update_progress');
+
+        return response()->json(
+            $progress ? json_decode($progress, true) : ['step' => 'idle', 'percent' => 0]
+        );
+    }
+
+    private function findPhpBinary(): string
+    {
+        if ($bin = env('CASHIER_PHP_BIN')) {
+            return $bin;
+        }
+
+        return PHP_BINARY;
+    }
+}

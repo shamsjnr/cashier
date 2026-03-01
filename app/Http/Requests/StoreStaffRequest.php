@@ -12,7 +12,7 @@ class StoreStaffRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return Auth::user()->is_admin;
+        return Auth::user()->can('staff.manage');
     }
 
     /**
@@ -27,6 +27,7 @@ class StoreStaffRequest extends FormRequest
             'email' => ['required', 'string', 'email'],
             'phone' => ['required', 'digits:11'],
             'password' => ['required', 'string', 'min:6'],
+            'role' => ['required', 'string', 'in:manager,cashier'],
         ];
     }
 }
