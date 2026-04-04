@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import HeadingSmall from '@/components/heading-small';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -129,16 +130,20 @@ function DeviceRow({
 export default function LicenseSettings({ licenseStatus, currentFingerprint, appVersion }: Props) {
     const [deactivating, setDeactivating] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [deviceToRemove, setDeviceToRemove] = useState<string | null>(null);
+    const [confirmDeactivate, setConfirmDeactivate] = useState(false);
 
     const handleDeactivateDevice = (fingerprint: string) => {
-        if (!confirm('Remove this device? It will need to be re-activated with the license key.')) {
-            return;
-        }
+        setDeviceToRemove(fingerprint);
+    };
 
-        setDeactivating(fingerprint);
+    const handleConfirmDeviceRemove = () => {
+        if (!deviceToRemove) return;
+        setDeactivating(deviceToRemove);
+        setDeviceToRemove(null);
         router.post(
             route('license.device.deactivate'),
-            { fingerprint },
+            { fingerprint: deviceToRemove },
             {
                 preserveScroll: true,
                 onFinish: () => setDeactivating(null),
@@ -147,13 +152,11 @@ export default function LicenseSettings({ licenseStatus, currentFingerprint, app
     };
 
     const handleDeactivateLicense = () => {
-        if (
-            !confirm(
-                'Deactivate your license? The app will return to the activation screen and this device slot will be freed.',
-            )
-        ) {
-            return;
-        }
+        setConfirmDeactivate(true);
+    };
+
+    const handleConfirmDeactivateLicense = () => {
+        setConfirmDeactivate(false);
         router.post(route('license.deactivate'));
     };
 
@@ -359,6 +362,26 @@ export default function LicenseSettings({ licenseStatus, currentFingerprint, app
                         </div>
                     </div>
                 </div>
+
+                <ConfirmDialog
+                    open={deviceToRemove !== null}
+                    onOpenChange={(open) => { if (!open) setDeviceToRemove(null); }}
+                    title="Remove Device"
+                    description="This device will be deactivated and will need to be re-activated with the license key to use the app again."
+                    confirmLabel="Remove Device"
+                    variant="destructive"
+                    onConfirm={handleConfirmDeviceRemove}
+                />
+
+                <ConfirmDialog
+                    open={confirmDeactivate}
+                    onOpenChange={setConfirmDeactivate}
+                    title="Deactivate License"
+                    description="This will remove the license from this installation, free the device slot, and return to the activation screen. All your data will be preserved."
+                    confirmLabel="Deactivate"
+                    variant="destructive"
+                    onConfirm={handleConfirmDeactivateLicense}
+                />
             </SettingsLayout>
         </AppLayout>
     );

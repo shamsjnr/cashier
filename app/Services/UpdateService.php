@@ -49,14 +49,15 @@ class UpdateService
 
             $release = $response->json();
             $latestVersion = ltrim($release['tag_name'] ?? '', 'v');
+            $updateAvailable = version_compare($latestVersion, $currentVersion, '>');
 
             return [
-                'available' => version_compare($latestVersion, $currentVersion, '>'),
+                'available' => $updateAvailable,
                 'current_version' => $currentVersion,
-                'latest_version' => $latestVersion,
-                'release_notes' => $release['body'] ?? null,
-                'release_url' => $release['html_url'] ?? null,
-                'published_at' => $release['published_at'] ?? null,
+                'latest_version' => $updateAvailable ? $latestVersion : $currentVersion,
+                'release_notes' => $updateAvailable ? ($release['body'] ?? null) : null,
+                'release_url' => $updateAvailable ? ($release['html_url'] ?? null) : null,
+                'published_at' => $updateAvailable ? ($release['published_at'] ?? null) : null,
             ];
         } catch (\Throwable $e) {
             Log::warning('Update check failed: ' . $e->getMessage());

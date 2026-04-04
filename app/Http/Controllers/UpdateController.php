@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\RunAppUpdate;
 use App\Models\PosSetting;
 use App\Services\UpdateService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Process;
 use Inertia\Inertia;
 
 class UpdateController extends Controller
@@ -46,10 +46,7 @@ class UpdateController extends Controller
             'updated_at' => now()->toISOString(),
         ]));
 
-        $php = $this->findPhpBinary();
-        $artisan = base_path('artisan');
-
-        Process::start([$php, $artisan, 'cashier:update']);
+        RunAppUpdate::dispatch();
 
         return back();
     }
@@ -64,14 +61,5 @@ class UpdateController extends Controller
         return response()->json(
             $progress ? json_decode($progress, true) : ['step' => 'idle', 'percent' => 0]
         );
-    }
-
-    private function findPhpBinary(): string
-    {
-        if ($bin = env('CASHIER_PHP_BIN')) {
-            return $bin;
-        }
-
-        return PHP_BINARY;
     }
 }

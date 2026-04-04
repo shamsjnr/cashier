@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import Markdown from 'react-markdown';
 import {
     CheckCircle2,
     AlertTriangle,
@@ -9,6 +10,7 @@ import {
     Info,
 } from 'lucide-react';
 
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import HeadingSmall from '@/components/heading-small';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +37,7 @@ interface Props {
 
 export default function SystemUpdate({ updateStatus, updateProgress }: Props) {
     const [checking, setChecking] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
     const [progress, setProgress] = useState<UpdateProgress | null>(updateProgress);
     const [updating, setUpdating] = useState(
         updateProgress != null &&
@@ -88,9 +91,11 @@ export default function SystemUpdate({ updateStatus, updateProgress }: Props) {
     };
 
     const handleUpdate = () => {
-        if (!confirm('This will put the app in maintenance mode and update to the latest version. Continue?')) {
-            return;
-        }
+        setConfirmOpen(true);
+    };
+
+    const handleConfirmUpdate = () => {
+        setConfirmOpen(false);
         setUpdating(true);
         setProgress({ step: 'queued', message: 'Update queued...', percent: 0, updated_at: '' });
         router.post(route('system-update.run'), {}, {
@@ -137,7 +142,9 @@ export default function SystemUpdate({ updateStatus, updateProgress }: Props) {
                                     {updateStatus.release_notes && (
                                         <div className="mt-3 rounded border bg-white p-3 text-sm dark:bg-gray-950">
                                             <p className="mb-1 text-xs font-medium text-muted-foreground">Release Notes</p>
-                                            <div className="whitespace-pre-wrap text-sm">{updateStatus.release_notes}</div>
+                                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                                                <Markdown>{updateStatus.release_notes}</Markdown>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -209,6 +216,15 @@ export default function SystemUpdate({ updateStatus, updateProgress }: Props) {
                         )}
                     </div>
                 </div>
+
+                <ConfirmDialog
+                    open={confirmOpen}
+                    onOpenChange={setConfirmOpen}
+                    title="Install Update"
+                    description="This will put the app in maintenance mode and update to the latest version. The app will be briefly unavailable during the process."
+                    confirmLabel="Update Now"
+                    onConfirm={handleConfirmUpdate}
+                />
             </SettingsLayout>
         </AppLayout>
     );
