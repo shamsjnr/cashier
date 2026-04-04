@@ -47,11 +47,11 @@ export default function Staff({ staff, roles }: StaffPageProps) {
                         <thead>
                             <tr className='border-b'>
                                 <th className='text-end p-2'>#</th>
-                                <th className='p-2'>Name</th>
-                                <th className='p-2'>Username</th>
-                                <th className='p-2'>Phone</th>
-                                <th className='p-2'>Role</th>
-                                <th className='p-2'></th>
+                                <th className='text-start p-2'>Name</th>
+                                <th className='text-start p-2'>Username</th>
+                                <th className='text-start p-2'>Phone</th>
+                                <th className='text-start p-2'>Role</th>
+                                <th className='text-start p-2'></th>
                             </tr>
                         </thead>
                         <tbody>

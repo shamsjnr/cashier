@@ -1,5 +1,6 @@
 import { PaginationLinks } from '@/components/pagination-links';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DatePicker } from '@/components/date-picker';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, PaginatedData, Receipt } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
@@ -60,8 +61,8 @@ export default function Receipts({ receipts, filters }: ReceiptsProps) {
                             onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                         />
                     </div>
-                    <input type="date" className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-                    <input type="date" className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                    <DatePicker value={dateFrom} onChange={setDateFrom} placeholder="From date" />
+                    <DatePicker value={dateTo} onChange={setDateTo} placeholder="To date" />
                     <select
                         className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         value={paymentMethod}
@@ -92,13 +93,13 @@ export default function Receipts({ receipts, filters }: ReceiptsProps) {
                         <thead>
                             <tr className='border-b'>
                                 <th className='text-end p-2'>#</th>
-                                <th className='p-2'>Receipt #</th>
-                                <th className='p-2'>Customer</th>
-                                <th className='text-end p-2'>Total</th>
-                                <th className='p-2'>Payment</th>
-                                <th className='p-2'>Date</th>
-                                <th className='p-2'>Cashier</th>
-                                <th className='p-2 print:hidden'></th>
+                                <th className='text-start p-2'>Receipt #</th>
+                                <th className='text-start p-2'>Customer</th>
+                                <th className='text-center p-2'>Total</th>
+                                <th className='text-start p-2'>Payment</th>
+                                <th className='text-start p-2'>Date</th>
+                                <th className='text-start p-2'>Cashier</th>
+                                <th className='text-end p-2 print:hidden'></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,8 +109,10 @@ export default function Receipts({ receipts, filters }: ReceiptsProps) {
                                 <td className='px-2 py-2.5 font-medium'>{data.receipt_number || `#${data.id}`}</td>
                                 <td className='px-2 py-2.5'>{data.customer_name}</td>
                                 <td className='px-2 py-2.5 text-end'>
-                                    <span className='text-gray-500 line-through decoration-double text-xs'>N</span>
-                                    {Number(data.total || 0).toLocaleString()}
+                                    <div className='text-end'>
+                                        <span className='text-gray-500 line-through decoration-double text-xs'>N</span>{' '}
+                                        {Number(data.total || 0).toLocaleString()}
+                                    </div>
                                 </td>
                                 <td className='px-2 py-2.5'>
                                     <span className='inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs'>

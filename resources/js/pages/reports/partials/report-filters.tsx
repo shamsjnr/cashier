@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/date-picker';
 import { router } from '@inertiajs/react';
 import { Download } from 'lucide-react';
 import { useState } from 'react';
@@ -21,9 +21,9 @@ export const ReportFilters = ({ filters, routeName, exportSlug }: ReportFiltersP
     return (
         <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40" />
-                <span className="text-sm">to</span>
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40" />
+                <DatePicker value={dateFrom} onChange={setDateFrom} placeholder="From date" />
+                <span className="text-sm text-muted-foreground">to</span>
+                <DatePicker value={dateTo} onChange={setDateTo} placeholder="To date" />
                 <Button variant="outline" size="sm" onClick={apply}>Apply</Button>
             </div>
             <div className="flex items-center gap-2">

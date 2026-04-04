@@ -179,7 +179,7 @@ class ReceiptController extends Controller
 
         // Update receipt fields
         $receipt->customer_name = $validated['customer_name'];
-        $receipt->customer_id = $validated['customer_id'];
+        $receipt->customer_id = $validated['customer_id'] ?? null;
         $receipt->payment_method = $validated['payment_method'];
         $receipt->amount_tendered = $validated['amount_tendered'];
         $receipt->discount_type = $validated['discount_type'];

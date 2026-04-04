@@ -61,59 +61,67 @@ export default function Dashboard({ chart, margins, todayStats, lowStockItems, r
                     </div>
                 </div>
 
-                {/* Chart */}
-                <div className="border rounded-xl overflow-hidden" style={{ height: 300 }}>
-                    <Chart data={chart?.data} />
-                </div>
-
-                {/* Bottom Row */}
-                <div className="grid gap-4 md:grid-cols-2">
-                    {/* Low Stock Alerts */}
-                    <div className="border rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-semibold flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                                Low Stock Alerts
-                            </h3>
-                            <Link href={route('inventory.list', { low_stock: '1' })} className="text-xs text-primary hover:underline flex items-center gap-0.5">
-                                View all <ArrowUpRight className="h-3 w-3" />
-                            </Link>
-                        </div>
-                        <div className="space-y-2">
-                            {lowStockItems?.length ? lowStockItems.map((item) => (
-                                <div key={item.uuid} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0">
-                                    <span>{item.name}</span>
-                                    <span className="text-red-600 font-medium">{item.stock_quantity} left</span>
-                                </div>
-                            )) : (
-                                <div className="text-sm text-muted-foreground text-center py-4">All items well stocked</div>
-                            )}
+                {/* Chart + Side panels — side-by-side on xl+ */}
+                <div className="grid gap-4 xl:grid-cols-3">
+                    {/* Chart (spans 2 of 3 cols on xl) */}
+                    <div className="border rounded-xl p-4 xl:col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground mb-3">Revenue — Last 30 Days</p>
+                        <div style={{ height: 220 }}>
+                            <Chart data={chart?.data} />
                         </div>
                     </div>
 
-                    {/* Recent Receipts */}
-                    <div className="border rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-semibold">Recent Receipts</h3>
-                            <Link href={route('receipt.list')} className="text-xs text-primary hover:underline flex items-center gap-0.5">
-                                View all <ArrowUpRight className="h-3 w-3" />
-                            </Link>
+                    {/* Right column: Low Stock + Recent Receipts stacked */}
+                    <div className="grid gap-4 content-start">
+                        {/* Low Stock Alerts */}
+                        <div className="border rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="font-semibold flex items-center gap-2 text-sm">
+                                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                    Low Stock
+                                </h3>
+                                <Link href={route('inventory.list', { low_stock: '1' })} className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                                    View all <ArrowUpRight className="h-3 w-3" />
+                                </Link>
+                            </div>
+                            <div className="space-y-1">
+                                {lowStockItems?.length ? lowStockItems.slice(0, 4).map((item) => (
+                                    <div key={item.uuid} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0">
+                                        <span>{item.name}</span>
+                                        <span className="text-red-600 font-medium">{item.stock_quantity} left</span>
+                                    </div>
+                                )) : (
+                                    <div className="text-sm text-muted-foreground text-center py-3">All items well stocked</div>
+                                )}
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            {recentReceipts?.length ? recentReceipts.map((r) => (
-                                <div key={r.id} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0">
-                                    <div>
-                                        <span className="font-medium">{r.receipt_number || `#${r.id}`}</span>
-                                        <span className="text-muted-foreground ml-2">{r.customer_name}</span>
+
+                        {/* Recent Receipts */}
+                        <div className="border rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="font-semibold text-sm">Recent Receipts</h3>
+                                <Link href={route('receipt.list')} className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                                    View all <ArrowUpRight className="h-3 w-3" />
+                                </Link>
+                            </div>
+                            <div className="space-y-1">
+                                {recentReceipts?.length ? recentReceipts.slice(0, 4).map((r) => (
+                                    <div key={r.id} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0">
+                                        <div className="min-w-0">
+                                            <span className="font-medium">{r.receipt_number || `#${r.id}`}</span>
+                                            {r.customer_name && (
+                                                <span className="text-muted-foreground ml-1 truncate text-xs"> {r.customer_name}</span>
+                                            )}
+                                        </div>
+                                        <div className="text-end shrink-0 ml-2">
+                                            <span className="text-gray-500 line-through decoration-double text-xs">N</span>
+                                            <span className="font-medium">{Number(r.total || 0).toLocaleString()}</span>
+                                        </div>
                                     </div>
-                                    <div className="text-end">
-                                        <span className="text-gray-500 line-through decoration-double text-xs">N</span>
-                                        <span className="font-medium">{Number(r.total || 0).toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="text-sm text-muted-foreground text-center py-4">No receipts yet</div>
-                            )}
+                                )) : (
+                                    <div className="text-sm text-muted-foreground text-center py-3">No receipts yet</div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

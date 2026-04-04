@@ -15,7 +15,6 @@ class UpdateController extends Controller
      */
     public function index(UpdateService $updateService)
     {
-        $updateService->clearCache();
         $updateStatus = $updateService->getUpdateStatus();
         $progress = PosSetting::get('update_progress');
 
@@ -26,21 +25,20 @@ class UpdateController extends Controller
     }
 
     /**
-     * Check for updates (JSON).
+     * Force a fresh check for updates, then redirect back.
      */
-    public function check(UpdateService $updateService): JsonResponse
+    public function check(UpdateService $updateService)
     {
         $updateService->clearCache();
 
-        return response()->json($updateService->getUpdateStatus());
+        return back();
     }
 
     /**
-     * Start the update process in the background.
+     * Start the update process in the background, then redirect back.
      */
-    public function run(): JsonResponse
+    public function run()
     {
-        // Reset progress
         PosSetting::set('update_progress', json_encode([
             'step' => 'queued',
             'message' => 'Update queued...',
@@ -51,17 +49,13 @@ class UpdateController extends Controller
         $php = $this->findPhpBinary();
         $artisan = base_path('artisan');
 
-        // Launch as a detached background process
         Process::start([$php, $artisan, 'cashier:update']);
 
-        return response()->json([
-            'status' => 'started',
-            'message' => 'Update process started.',
-        ]);
+        return back();
     }
 
     /**
-     * Poll for update progress (JSON).
+     * Poll for update progress (lightweight JSON GET — no CSRF needed).
      */
     public function progress(): JsonResponse
     {
