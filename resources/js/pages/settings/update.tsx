@@ -8,6 +8,7 @@ import {
     RefreshCw,
     Loader2,
     Info,
+    StopCircle,
 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -37,7 +38,9 @@ interface Props {
 
 export default function SystemUpdate({ updateStatus, updateProgress }: Props) {
     const [checking, setChecking] = useState(false);
+    const [stopping, setStopping] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
     const [progress, setProgress] = useState<UpdateProgress | null>(updateProgress);
     const [updating, setUpdating] = useState(
         updateProgress != null &&
@@ -97,9 +100,26 @@ export default function SystemUpdate({ updateStatus, updateProgress }: Props) {
     const handleConfirmUpdate = () => {
         setConfirmOpen(false);
         setUpdating(true);
-        setProgress({ step: 'queued', message: 'Update queued...', percent: 0, updated_at: '' });
+        setProgress({ step: 'starting', message: 'Starting update...', percent: 0, updated_at: '' });
         router.post(route('system-update.run'), {}, {
             preserveScroll: true,
+        });
+    };
+
+    const handleStop = () => {
+        setStopConfirmOpen(true);
+    };
+
+    const handleConfirmStop = () => {
+        setStopConfirmOpen(false);
+        setStopping(true);
+        router.post(route('system-update.stop'), {}, {
+            preserveScroll: true,
+            onFinish: () => {
+                setStopping(false);
+                setUpdating(false);
+                setProgress(null);
+            },
         });
     };
 
@@ -160,15 +180,33 @@ export default function SystemUpdate({ updateStatus, updateProgress }: Props) {
                     {/* Update progress */}
                     {(updating || (progress && progress.step !== 'idle')) && (
                         <div className="space-y-3 rounded-lg border p-4">
-                            <div className="flex items-center gap-2">
-                                {progress?.step === 'complete' ? (
-                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                ) : progress?.step === 'failed' ? (
-                                    <AlertTriangle className="h-5 w-5 text-red-600" />
-                                ) : (
-                                    <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    {progress?.step === 'complete' ? (
+                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                    ) : progress?.step === 'failed' ? (
+                                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                                    ) : (
+                                        <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                                    )}
+                                    <p className="text-sm font-medium">{progress?.message}</p>
+                                </div>
+                                {updating && progress?.step !== 'complete' && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleStop}
+                                        disabled={stopping}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                    >
+                                        {stopping ? (
+                                            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <StopCircle className="mr-1.5 h-4 w-4" />
+                                        )}
+                                        Stop
+                                    </Button>
                                 )}
-                                <p className="text-sm font-medium">{progress?.message}</p>
                             </div>
 
                             {/* Progress bar */}
@@ -188,7 +226,16 @@ export default function SystemUpdate({ updateStatus, updateProgress }: Props) {
                             )}
 
                             {progress?.step === 'failed' && (
-                                <p className="text-sm text-red-600">{progress.message}</p>
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm text-red-600">{progress.message}</p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleConfirmStop}
+                                    >
+                                        Dismiss
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     )}
@@ -224,6 +271,15 @@ export default function SystemUpdate({ updateStatus, updateProgress }: Props) {
                     description="This will put the app in maintenance mode and update to the latest version. The app will be briefly unavailable during the process."
                     confirmLabel="Update Now"
                     onConfirm={handleConfirmUpdate}
+                />
+
+                <ConfirmDialog
+                    open={stopConfirmOpen}
+                    onOpenChange={setStopConfirmOpen}
+                    title="Stop Update"
+                    description="This will stop the update process and restore the application. If the update was mid-way, some changes may be incomplete — you can retry the update later."
+                    confirmLabel="Stop Update"
+                    onConfirm={handleConfirmStop}
                 />
             </SettingsLayout>
         </AppLayout>

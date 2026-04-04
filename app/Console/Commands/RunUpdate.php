@@ -37,8 +37,11 @@ class RunUpdate extends Command
                 '--no-dev', '--optimize-autoloader', '--no-interaction',
             ], $basePath, 300);
 
-            // Step 4: NPM install
+            // Step 4: NPM install (kill node processes and remove node_modules to avoid EPERM locks)
             $this->setProgress('npm', 'Installing JS dependencies...', 55);
+            $this->killNodeProcesses();
+            sleep(2); // Give OS time to release file handles
+            $this->removeNodeModules($basePath);
             $this->runProcess([$this->findBin('npm'), 'ci'], $basePath, 300);
 
             // Step 5: Build frontend
@@ -93,6 +96,47 @@ class RunUpdate extends Command
         }
 
         return $name;
+    }
+
+    private function removeNodeModules(string $basePath): void
+    {
+        $nodeModules = $basePath . DIRECTORY_SEPARATOR . 'node_modules';
+
+        if (! is_dir($nodeModules)) {
+            return;
+        }
+
+        try {
+            if (DIRECTORY_SEPARATOR === '\\') {
+                // Windows: rd /s /q is faster and handles locked files better than PHP's rmdir
+                $process = new Process(['cmd', '/c', 'rd', '/s', '/q', $nodeModules], $basePath, null, null, 120);
+                $process->run();
+            } else {
+                $process = new Process(['rm', '-rf', $nodeModules], $basePath, null, null, 120);
+                $process->run();
+            }
+
+            $this->info('Removed node_modules directory.');
+        } catch (\Throwable $e) {
+            Log::warning('Could not remove node_modules: ' . $e->getMessage());
+        }
+    }
+
+    private function killNodeProcesses(): void
+    {
+        try {
+            if (DIRECTORY_SEPARATOR === '\\') {
+                // Windows: kill node.exe processes that may lock files in node_modules
+                $process = new Process(['taskkill', '/F', '/IM', 'node.exe'], null, null, null, 10);
+                $process->run();
+            } else {
+                $process = new Process(['killall', '-9', 'node'], null, null, null, 10);
+                $process->run();
+            }
+        } catch (\Throwable $e) {
+            // Ignore — there may be no node processes running
+            Log::info('No node processes to kill: ' . $e->getMessage());
+        }
     }
 
     private function setProgress(string $step, string $message, int $percent): void

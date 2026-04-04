@@ -12,6 +12,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\UpdateController;
 use App\Models\PosSetting;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -110,7 +111,7 @@ Route::middleware(['auth'])->group(function () {
                 ],
             ]);
         })->name('pos-settings');
-        Route::put('', function (\Illuminate\Http\Request $request) {
+        Route::put('', function (Request $request) {
             if ($request->has('shifts_enabled')) {
                 PosSetting::set('shifts_enabled', $request->boolean('shifts_enabled') ? 'true' : 'false');
             }
@@ -120,6 +121,7 @@ Route::middleware(['auth'])->group(function () {
             if ($request->filled('currency_symbol')) {
                 PosSetting::set('currency_symbol', $request->input('currency_symbol'));
             }
+
             return back()->with(['status' => 'success', 'message' => 'Settings updated.']);
         });
     });
@@ -129,8 +131,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('', [UpdateController::class, 'index'])->name('system-update');
         Route::post('check', [UpdateController::class, 'check'])->name('system-update.check');
         Route::post('run', [UpdateController::class, 'run'])->name('system-update.run');
-        Route::get('progress', [UpdateController::class, 'progress'])->name('system-update.progress');
+        Route::post('stop', [UpdateController::class, 'stop'])->name('system-update.stop');
     });
+
+    // These update routes must work during maintenance mode (excluded in bootstrap/app.php)
+    Route::get('system-update/progress', [UpdateController::class, 'progress'])->name('system-update.progress');
+    Route::post('system-update/recover', [UpdateController::class, 'recover'])->name('system-update.recover');
 
     // License management (admin only)
     Route::prefix('license')->middleware('permission:settings.manage')->group(function () {
