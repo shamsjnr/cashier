@@ -10,13 +10,21 @@ use Symfony\Component\Process\Process;
 
 class RunUpdate extends Command
 {
-    protected $signature = 'cashier:update';
+    protected $signature = 'cashier:update {tag? : The release tag to update to (e.g. v1.0.0)}';
 
-    protected $description = 'Pull the latest version from GitHub and run build/migration steps';
+    protected $description = 'Update to a specific release tag from GitHub';
 
     public function handle(): int
     {
-        $this->setProgress('starting', 'Preparing update...', 0);
+        $tag = $this->argument('tag');
+
+        if (! $tag) {
+            $this->error('No release tag provided. Usage: cashier:update v1.0.0');
+
+            return self::FAILURE;
+        }
+
+        $this->setProgress('starting', "Preparing update to {$tag}...", 0);
         $basePath = base_path();
         $secret = str()->uuid()->toString();
 
@@ -25,10 +33,14 @@ class RunUpdate extends Command
         $this->call('down', ['--secret' => $secret]);
 
         try {
-            // Step 2: Git pull
-            $this->setProgress('git', 'Pulling latest changes...', 15);
-            $this->runProcess(['git', 'fetch', 'origin'], $basePath);
-            $this->runProcess(['git', 'pull', 'origin', 'main'], $basePath);
+            // Step 2: Fetch tags and checkout the release
+            $this->setProgress('git', "Checking out release {$tag}...", 15);
+            $this->runProcess(['git', 'fetch', 'origin', '--tags'], $basePath);
+            $this->runProcess(['git', 'checkout', $tag], $basePath);
+
+            // Write the new version to .env
+            $version = ltrim($tag, 'v');
+            $this->updateEnvVersion($basePath, $version);
 
             // Step 3: Composer install
             $this->setProgress('composer', 'Installing PHP dependencies...', 35);
@@ -37,12 +49,12 @@ class RunUpdate extends Command
                 '--no-dev', '--optimize-autoloader', '--no-interaction',
             ], $basePath, 300);
 
-            // Step 4: NPM install (kill node processes and remove node_modules to avoid EPERM locks)
+            // Step 4: NPM install (move node_modules aside to avoid EPERM from VS Code / antivirus locks)
             $this->setProgress('npm', 'Installing JS dependencies...', 55);
             $this->killNodeProcesses();
-            sleep(2); // Give OS time to release file handles
-            $this->removeNodeModules($basePath);
-            $this->runProcess([$this->findBin('npm'), 'ci'], $basePath, 300);
+            // $staleDir = $this->moveNodeModulesAside($basePath);
+            $this->runProcess([$this->findBin('npm'), 'install'], $basePath, 300);
+            // $this->cleanupStaleNodeModules($staleDir);
 
             // Step 5: Build frontend
             $this->setProgress('build', 'Building frontend assets...', 70);
@@ -61,8 +73,19 @@ class RunUpdate extends Command
             $this->call('up');
             $this->setProgress('complete', 'Update completed successfully!', 100);
 
-            // Clear the update check cache
+            // Clear the update check cache so the new version is detected
             app(UpdateService::class)->clearCache();
+
+            // Wait briefly so the 503 page / frontend can see the "complete" state,
+            // then reset progress to idle so it doesn't persist on the next page load
+            sleep(5);
+            PosSetting::set('update_progress', json_encode([
+                'step' => 'idle',
+                'message' => '',
+                'percent' => 0,
+                'updated_at' => now()->toISOString(),
+            ]));
+            PosSetting::set('update_started_at', null);
 
             return self::SUCCESS;
         } catch (\Throwable $e) {
@@ -74,6 +97,29 @@ class RunUpdate extends Command
 
             return self::FAILURE;
         }
+    }
+
+    /**
+     * Write the new version to .env so config('cashier.version') reflects it.
+     */
+    private function updateEnvVersion(string $basePath, string $version): void
+    {
+        $envFile = $basePath . DIRECTORY_SEPARATOR . '.env';
+
+        if (! file_exists($envFile)) {
+            return;
+        }
+
+        $envContents = file_get_contents($envFile);
+
+        if (str_contains($envContents, 'CASHIER_VERSION=')) {
+            $envContents = preg_replace('/^CASHIER_VERSION=.*/m', "CASHIER_VERSION={$version}", $envContents);
+        } else {
+            $envContents .= "\nCASHIER_VERSION={$version}\n";
+        }
+
+        file_put_contents($envFile, $envContents);
+        $this->info("Updated .env version to {$version}");
     }
 
     private function runProcess(array $command, string $cwd, int $timeout = 120): string
@@ -98,27 +144,54 @@ class RunUpdate extends Command
         return $name;
     }
 
-    private function removeNodeModules(string $basePath): void
+    /**
+     * Rename node_modules out of the way so npm ci can install fresh.
+     * Windows allows renaming directories even when files inside are locked.
+     */
+    private function moveNodeModulesAside(string $basePath): ?string
     {
         $nodeModules = $basePath . DIRECTORY_SEPARATOR . 'node_modules';
 
         if (! is_dir($nodeModules)) {
+            return null;
+        }
+
+        $staleDir = $basePath . DIRECTORY_SEPARATOR . 'node_modules_old_' . time();
+
+        try {
+            rename($nodeModules, $staleDir);
+            $this->info("Moved node_modules to {$staleDir}");
+
+            return $staleDir;
+        } catch (\Throwable $e) {
+            Log::warning('Could not move node_modules aside: ' . $e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
+     * Try to delete the stale node_modules directory. If it fails (files still locked),
+     * schedule it for cleanup on next boot or just leave it — it's harmless.
+     */
+    private function cleanupStaleNodeModules(?string $staleDir): void
+    {
+        if (! $staleDir || ! is_dir($staleDir)) {
             return;
         }
 
         try {
             if (DIRECTORY_SEPARATOR === '\\') {
-                // Windows: rd /s /q is faster and handles locked files better than PHP's rmdir
-                $process = new Process(['cmd', '/c', 'rd', '/s', '/q', $nodeModules], $basePath, null, null, 120);
+                $process = new Process(['cmd', '/c', 'rd', '/s', '/q', $staleDir], null, null, null, 60);
                 $process->run();
             } else {
-                $process = new Process(['rm', '-rf', $nodeModules], $basePath, null, null, 120);
+                $process = new Process(['rm', '-rf', $staleDir], null, null, null, 60);
                 $process->run();
             }
 
-            $this->info('Removed node_modules directory.');
+            $this->info('Cleaned up old node_modules.');
         } catch (\Throwable $e) {
-            Log::warning('Could not remove node_modules: ' . $e->getMessage());
+            Log::info('Could not cleanup old node_modules (will be cleaned up later): ' . $e->getMessage());
         }
     }
 

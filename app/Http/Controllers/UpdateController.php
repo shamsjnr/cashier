@@ -38,18 +38,32 @@ class UpdateController extends Controller
     /**
      * Start the update process as a background artisan command.
      */
-    public function run(): mixed
+    public function run(UpdateService $updateService): mixed
     {
+        $updateStatus = $updateService->getUpdateStatus();
+
+        // If the cached status is stale (missing tag_name), force a fresh check
+        if (($updateStatus['available'] ?? false) && ! isset($updateStatus['tag_name'])) {
+            $updateService->clearCache();
+            $updateStatus = $updateService->getUpdateStatus();
+        }
+
+        if (! ($updateStatus['available'] ?? false) || empty($updateStatus['tag_name'])) {
+            return back()->with(['status' => 'error', 'message' => 'No update available.']);
+        }
+
+        $tag = $updateStatus['tag_name'];
+
         PosSetting::set('update_progress', json_encode([
             'step' => 'starting',
-            'message' => 'Starting update...',
+            'message' => "Starting update to {$tag}...",
             'percent' => 0,
             'updated_at' => now()->toISOString(),
         ]));
 
         PosSetting::set('update_started_at', now()->toISOString());
 
-        $this->spawnUpdateProcess();
+        $this->spawnUpdateProcess($tag);
 
         return back();
     }
@@ -109,26 +123,28 @@ class UpdateController extends Controller
     }
 
     /**
-     * Spawn `php artisan cashier:update` as a detached background process.
+     * Spawn `php artisan cashier:update {tag}` as a detached background process.
      */
-    private function spawnUpdateProcess(): void
+    private function spawnUpdateProcess(string $tag): void
     {
         $phpBinary = $this->resolvePhpBinary();
         $artisan = base_path('artisan');
         $logFile = storage_path('logs/update-process.log');
+        $escapedTag = escapeshellarg($tag);
 
         if (DIRECTORY_SEPARATOR === '\\') {
             $command = sprintf(
-                'cmd /c start /B "" "%s" "%s" cashier:update > "%s" 2>&1',
+                'cmd /c start /B "" "%s" "%s" cashier:update %s > "%s" 2>&1',
                 $phpBinary,
                 $artisan,
+                $escapedTag,
                 $logFile,
             );
         } else {
-            $command = sprintf('"%s" "%s" cashier:update > "%s" 2>&1 &', $phpBinary, $artisan, $logFile);
+            $command = sprintf('"%s" "%s" cashier:update %s > "%s" 2>&1 &', $phpBinary, $artisan, $escapedTag, $logFile);
         }
 
-        Log::info('Spawning update process', ['command' => $command, 'php_binary' => $phpBinary]);
+        Log::info('Spawning update process', ['command' => $command, 'tag' => $tag]);
 
         pclose(popen($command, 'r'));
     }
