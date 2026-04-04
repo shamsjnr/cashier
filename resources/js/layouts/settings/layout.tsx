@@ -29,6 +29,12 @@ const sidebarNavItems: NavItem[] = [
         permission: 'settings.manage',
     },
     {
+        title: 'License & Devices',
+        url: '/license/manage',
+        icon: null,
+        permission: 'settings.manage',
+    },
+    {
         title: 'System Update',
         url: '/system-update',
         icon: null,

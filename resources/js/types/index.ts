@@ -34,12 +34,27 @@ export interface UpdateInfo {
     published_at: string | null;
 }
 
+export interface DeviceInfo {
+    fingerprint: string;
+    hostname: string | null;
+    app_url: string | null;
+    app_version: string | null;
+    activated_at: string | null;
+    last_verified_at: string | null;
+    is_current?: boolean;
+}
+
 export interface LicenseInfo {
     is_licensed: boolean;
+    state: 'active' | 'degraded' | 'unlicensed';
     licensee_name: string | null;
     license_type: string | null;
     expires_at: string | null;
     features: string[];
+    plan: string | null;
+    devices: DeviceInfo[];
+    max_devices: number;
+    last_verified_at: string | null;
 }
 
 export interface SharedData {

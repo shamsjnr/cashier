@@ -2,6 +2,7 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { LicenseBanner } from '@/components/license-banner';
 import { Toaster } from '@/components/ui/sonner';
 import { useFlashToast } from '@/hooks/use-flash-toast';
 import { type BreadcrumbItem } from '@/types';
@@ -14,6 +15,7 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: { child
             <AppSidebar />
             <AppContent variant="sidebar">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
+                <LicenseBanner />
                 {children}
             </AppContent>
             <Toaster position="top-right" richColors closeButton />

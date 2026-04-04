@@ -49,7 +49,7 @@ export default function ActivateLicense({ appName }: Props) {
                                 id="license_key"
                                 value={data.license_key}
                                 onChange={(e) => setData('license_key', e.target.value.toUpperCase())}
-                                placeholder="XXXX-XXXX-XXXX-XXXX"
+                                placeholder="XXXXX-XXXX-XXXX-XXXX-XXXXXX"
                                 autoFocus
                                 autoComplete="off"
                                 className="font-mono tracking-wider"

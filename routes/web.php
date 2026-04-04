@@ -132,10 +132,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('progress', [UpdateController::class, 'progress'])->name('system-update.progress');
     });
 
-    // License deactivation (admin only)
-    Route::post('license/deactivate', [LicenseController::class, 'deactivate'])
-        ->middleware('permission:settings.manage')
-        ->name('license.deactivate');
+    // License management (admin only)
+    Route::prefix('license')->middleware('permission:settings.manage')->group(function () {
+        Route::get('manage', [LicenseController::class, 'show'])->name('license.manage');
+        Route::post('deactivate', [LicenseController::class, 'deactivate'])->name('license.deactivate');
+        Route::post('device/deactivate', [LicenseController::class, 'deactivateDevice'])->name('license.device.deactivate');
+    });
 });
 
 require __DIR__.'/admin.php';

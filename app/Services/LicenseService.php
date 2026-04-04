@@ -39,6 +39,8 @@ class LicenseService
                 return ['success' => true, 'data' => $data];
             }
 
+            info("License activation failed: " . print_r($data, true));
+
             return ['success' => false, 'error' => $data['error'] ?? 'Activation failed'];
         } catch (\Throwable $e) {
             Log::error('License activation failed: ' . $e->getMessage());
@@ -57,6 +59,9 @@ class LicenseService
             'license_type' => $data['license_type'] ?? 'standard',
             'expires_at' => $data['expires_at'] ?? null,
             'features' => $data['features'] ?? [],
+            'plan' => $data['plan'] ?? null,
+            'devices' => $data['devices'] ?? [],
+            'max_devices' => $data['max_devices'] ?? 1,
             'activated_at' => now()->toISOString(),
             'last_verified_at' => now()->toISOString(),
         ];
@@ -64,6 +69,7 @@ class LicenseService
         PosSetting::set('license_data', Crypt::encryptString(json_encode($payload)));
         PosSetting::set('license_key', $key);
         Cache::forget('license.status');
+        Cache::forget('license.state');
     }
 
     /**
@@ -99,17 +105,21 @@ class LicenseService
             $response = Http::timeout(15)->post("{$serverUrl}/license/verify", [
                 'license_key' => $license['license_key'],
                 'fingerprint' => $this->fingerprint(),
+                'app_version' => config('cashier.version'),
             ]);
 
             $data = $response->json();
 
             if ($response->successful() && ($data['valid'] ?? false)) {
-                // Update verification timestamp
                 $license['last_verified_at'] = now()->toISOString();
                 $license['expires_at'] = $data['expires_at'] ?? $license['expires_at'];
                 $license['features'] = $data['features'] ?? $license['features'];
+                $license['plan'] = $data['plan'] ?? $license['plan'] ?? null;
+                $license['devices'] = $data['devices'] ?? $license['devices'] ?? [];
+                $license['max_devices'] = $data['max_devices'] ?? $license['max_devices'] ?? 1;
                 PosSetting::set('license_data', Crypt::encryptString(json_encode($license)));
                 Cache::forget('license.status');
+        Cache::forget('license.state');
 
                 return ['valid' => true, 'data' => $license];
             }
@@ -119,6 +129,7 @@ class LicenseService
                 $license['revoked'] = true;
                 PosSetting::set('license_data', Crypt::encryptString(json_encode($license)));
                 Cache::forget('license.status');
+        Cache::forget('license.state');
             }
 
             return ['valid' => false, 'reason' => $data['error'] ?? 'Verification failed'];
@@ -131,39 +142,78 @@ class LicenseService
     }
 
     /**
-     * Check if the app is currently licensed.
+     * Determine the license state: active, degraded, or unlicensed.
+     *
+     * - 'active': fully licensed, all features enabled
+     * - 'degraded': expired beyond grace or unreachable beyond grace — core POS only
+     * - 'unlicensed': no license data or revoked
+     */
+    public function getLicenseState(): string
+    {
+        return Cache::remember('license.state', now()->addMinutes(5), function () {
+            $license = $this->getLicenseData();
+            if (! $license) {
+                return 'unlicensed';
+            }
+
+            if ($license['revoked'] ?? false) {
+                return 'unlicensed';
+            }
+
+            $expired = isset($license['expires_at']) && now()->isAfter($license['expires_at']);
+            $lastVerified = $license['last_verified_at'] ?? null;
+            $graceDays = config('cashier.license.grace_period_days');
+            $beyondGrace = $lastVerified && now()->diffInDays($lastVerified) > $graceDays;
+
+            if ($expired && $beyondGrace) {
+                return 'degraded';
+            }
+
+            if ($expired) {
+                // Within grace — still active, but try to verify
+                if ($beyondGrace) {
+                    $result = $this->verify();
+                    return ($result['valid'] ?? false) ? 'active' : 'degraded';
+                }
+                return 'degraded';
+            }
+
+            if ($beyondGrace) {
+                $result = $this->verify();
+                return ($result['valid'] ?? false) ? 'active' : 'degraded';
+            }
+
+            return 'active';
+        });
+    }
+
+    /**
+     * Check if the app is currently licensed (active or degraded — not unlicensed).
      * Uses cache to avoid DB/decryption on every request.
      */
     public function isLicensed(): bool
     {
-        return Cache::remember('license.status', now()->addMinutes(5), function () {
-            $license = $this->getLicenseData();
-            if (! $license) {
-                return false;
-            }
+        return $this->getLicenseState() !== 'unlicensed';
+    }
 
-            if ($license['revoked'] ?? false) {
-                return false;
-            }
+    /**
+     * Check if a specific feature is available under the current license.
+     */
+    public function hasFeature(string $feature): bool
+    {
+        if ($this->getLicenseState() === 'unlicensed') {
+            return false;
+        }
 
-            // Check expiry
-            if (isset($license['expires_at']) && now()->isAfter($license['expires_at'])) {
-                return false;
-            }
+        // Degraded mode: only core_pos
+        if ($this->getLicenseState() === 'degraded') {
+            return $feature === 'core_pos';
+        }
 
-            // Check grace period for re-validation
-            $lastVerified = $license['last_verified_at'] ?? null;
-            $graceDays = config('cashier.license.grace_period_days');
+        $license = $this->getLicenseData();
+        $features = $license['features'] ?? [];
 
-            if ($lastVerified && now()->diffInDays($lastVerified) > $graceDays) {
-                // Beyond grace period, force online check
-                $result = $this->verify();
-
-                return $result['valid'] ?? false;
-            }
-
-            return true;
-        });
+        return in_array($feature, $features);
     }
 
     /**
@@ -172,13 +222,19 @@ class LicenseService
     public function getStatus(): array
     {
         $license = $this->getLicenseData();
+        $state = $this->getLicenseState();
 
         return [
-            'is_licensed' => $this->isLicensed(),
+            'is_licensed' => $state !== 'unlicensed',
+            'state' => $state,
             'licensee_name' => $license['licensee_name'] ?? null,
             'license_type' => $license['license_type'] ?? null,
             'expires_at' => $license['expires_at'] ?? null,
-            'features' => $license['features'] ?? [],
+            'features' => $state === 'degraded' ? ['core_pos'] : ($license['features'] ?? []),
+            'plan' => $license['plan'] ?? null,
+            'devices' => $license['devices'] ?? [],
+            'max_devices' => $license['max_devices'] ?? 1,
+            'last_verified_at' => $license['last_verified_at'] ?? null,
         ];
     }
 
@@ -206,6 +262,7 @@ class LicenseService
         PosSetting::set('license_data', null);
         PosSetting::set('license_key', null);
         Cache::forget('license.status');
+        Cache::forget('license.state');
 
         return true;
     }
